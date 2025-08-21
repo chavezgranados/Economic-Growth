@@ -11,6 +11,7 @@
 
 ### Sesiones virtuales:
 [Ingresar](https://meet.google.com/boe-pyaz-pjx)
+
 Recomendaciones para ingresar:
 - Apagar micrófono y cámara.
 - Verificar calidad de conexión (3.2 Mbps mínimamente).

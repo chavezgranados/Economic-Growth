@@ -10,7 +10,7 @@
 
 
 ### Sesiones virtuales:
-[Ingresar](https://meet.google.com/boe-pyaz-pjx)
+[Ingresar](https://meet.google.com/mja-odnq-hzw)
 
 Recomendaciones para ingresar:
 - Apagar micrófono y cámara.

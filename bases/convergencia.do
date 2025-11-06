@@ -9,12 +9,12 @@ use "$bases/pwt110.dta", clear
 merge m:1 countrycode using "$bases/countriesWB.dta"
 drop Economy _merge
 rename Region region
-generate gdppc = rgdpna/pop
+generate gdppc = rgdpo/pop
 generate ln_gdppc = ln(gdppc)
 
 
-*1. Hechos estilizados =====================================
 
+*1. Hechos estilizados =====================================
 
 {
 preserve
@@ -40,41 +40,38 @@ graph dot decade60 decade80 decade00 decade20, over(region) ///
     ytitle("ln PIB per cápita") ///
     exclude0 ///
     name(Fig1, replace)
-
 restore
 }
 
 
 keep if inlist(year,1960,2019)
-bys countrycode (year): gen growth = (gdppc - gdppc[_n-1]) / gdppc[_n-1] if year==2019
+bys countrycode (year): gen growth = (ln(gdppc) - ln(gdppc[_n-1]))/59*100 if year==2019 // 59 años de dif
 bys countrycode (year): gen gdppc1960 = gdppc[1] if year==2019
 encode Incomegroup, gen(inc)
 
-generate inc3 = .
+generate inc3 =.
 replace inc3 = 1 if Incomegroup == "Low income"
 replace inc3 = 2 if inlist(Incomegroup, "Lower middle income", "Upper middle income")
 replace inc3 = 3 if Incomegroup == "High income"
-
 label define inc3lbl 1 "Low" 2 "Middle" 3 "High"
 label values inc3 inc3lbl
 
-* En niveles -------
+
+*2. Convergencia beta absoluta ================================
+
+* Graph
 twoway (scatter growth gdppc1960 if inc3==1, mcolor("`col1'") mlabel(countrycode) mlabsize(vsmall)) (lfit growth gdppc1960 if inc3==1 , lcolor("orange") mlabel(countrycode) mlabsize(vsmall)) (scatter growth gdppc1960 if inc3==2, mcolor("`col2'") mlabel(countrycode) mlabsize(vsmall) fi(10)) (lfit growth gdppc1960 if inc3==2, lcolor("lime") mlabel(countrycode) mlabsize(vsmall)) (scatter growth gdppc1960 if inc3==3, mcolor("`col3'") mlabel(countrycode) mlabsize(vsmall)) (lfit growth gdppc1960 if inc3==3, lcolor("magenta") fi(10)), xtitle("PIB per cápita 1960") ytitle("Tasa PIB per cápita 1960-2019") legend(order(1 "Low income" 3 "Middle income" 5 "High income") region(lwidth(none)) ring(0) pos(1) size(small) rows(1)) graphregion(fcolor(gs16)) name(Fig2, replace) xlabel(, nogrid) ylabel(, nogrid)
 
+* Regress 
+keep if year == 2019
+gen ln_gdppc1960 = ln(gdppc1960)
+reg growth ln_gdppc1960, robust // No hay convergencia mundial
 
-* En  logaritmos ------
-gen ln_gdppc1960=ln(gdppc1960)
+* Velocidad de convergencia
+scalar beta = _b[ln_gdppc1960]
+scalar lambda = -beta/59
+display "Velocidad de convergencia λ: " lambda
 
-twoway (scatter growth ln_gdppc1960 if inc3==1, mcolor("`col1'") mlabel(countrycode) mlabsize(vsmall)) (lfit growth ln_gdppc1960 if inc3==1 , lcolor("orange") mlabel(countrycode) mlabsize(vsmall)) (scatter growth ln_gdppc1960 if inc3==2, mcolor("`col2'") mlabel(countrycode) mlabsize(vsmall) fi(10)) (lfit growth ln_gdppc1960 if inc3==2, lcolor("lime") mlabel(countrycode) mlabsize(vsmall)) (scatter growth ln_gdppc1960 if inc3==3, mcolor("`col3'") mlabel(countrycode) mlabsize(vsmall)) (lfit growth ln_gdppc1960 if inc3==3, lcolor("magenta") fi(10)), xtitle("PIB per cápita 1960") ytitle("Tasa PIB per cápita 1960-2019") legend(order(1 "Low income" 3 "Middle income" 5 "High income") region(lwidth(none)) ring(0) pos(1) size(small) rows(1)) graphregion(fcolor(gs16)) name(Fig3, replace) xlabel(, nogrid) ylabel(, nogrid)
-
-
-
-*2. Convergencia beta =====================================
-use "$bases/pwt110.dta", clear
-encode countrycode, gen(countrycode2)
-xtset countrycode2 year
-gen lngdp = ln(cgdpe)
-gen growth = lngdp - L.lngdp
-gen lny0 = L.lngdp
-reg growth lny0
-// No hay evidencia de convergencia absoluta.
+* Tiempo para reducir 1/2 la brecha
+scalar half = ln(2)/lambda
+display "Half-life (años): " half
